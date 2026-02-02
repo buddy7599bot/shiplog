@@ -74,8 +74,9 @@ export async function POST(request: Request) {
     });
 
   if (insertError) {
+    console.error('journey_shares insert error:', insertError);
     return NextResponse.json(
-      { error: 'Failed to save journey share.' },
+      { error: 'Failed to save journey share.', detail: insertError.message },
       { status: 500 }
     );
   }
