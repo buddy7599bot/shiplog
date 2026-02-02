@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
+import LandingPage from "@/components/LandingPage";
+import Dashboard from "@/components/Dashboard";
+import { supabase } from "@/lib/supabase";
+import type { Session } from "@supabase/supabase-js";
 
 interface LogEntry {
   id: string;
@@ -75,6 +79,8 @@ function ThemeToggle() {
 }
 
 export default function Home() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [text, setText] = useState("");
   const [category, setCategory] = useState<LogEntry["category"]>("build");
@@ -82,6 +88,18 @@ export default function Home() {
   const [projectName, setProjectName] = useState("My Project");
   const [editingName, setEditingName] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setAuthLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      setAuthLoading(false);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -130,7 +148,11 @@ export default function Home() {
     .join("\n")}\n\n🔥 ${streak}-day streak\n\nTrack your build journey -> shiplog-app.vercel.app`;
 
   if (!mounted) return null;
+  if (authLoading || !session?.user) return <LandingPage />;
 
+  return <Dashboard session={session} />;
+
+  /* OLD DASHBOARD BELOW - keeping for reference */
   return (
     <div className="min-h-screen">
       {/* Navbar */}
